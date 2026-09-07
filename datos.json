@@ -1,0 +1,41 @@
+[
+  {
+    "nombre": "yojan",
+    "cda": "33",
+    "correo": "micorreo@gmail.com",
+    "img": "url",
+    "clave": "123x"
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "nombre": "yojan",
+    "cda": "33",
+    "correo": "micorreo@gmail.com",
+    "img": "url",
+    "clave": "123x"
+  },
+  [
+    {
+      "nombre": "yojan",
+      "cda": "33",
+      "correo": "micorreo@gmail.com",
+      "img": "url",
+      "clave": "123x"
+    }
+  ]
+]

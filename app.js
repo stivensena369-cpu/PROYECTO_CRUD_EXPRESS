@@ -4,11 +4,10 @@ const sistemaArchivos = require('fs').promises;
 const ruta = require('path');
 const multer = require("multer");
 
-// Middleware de registro (Historial)
+// Importación de middlewares locales
 const registroMiddleware = require("./middleware/registroMiddleware");
-
-// Middleware de validaciones
-const { validarAprendiz } = require("./validacioncv/validaciones");
+const { validarAprendiz } = require("./validaciones/validaciones");
+const manejadorErroresMiddleware = require("./middleware/manejadorErroresMiddleware");
 
 // 2. INICIALIZACIÓN
 const app = express();
@@ -20,7 +19,7 @@ const rutaMiArchivo = ruta.join(__dirname, 'datos.json');
 // 4. CONFIGURACIÓN DE MULTER
 const almacen = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "mis_imagenes/"); 
+    cb(null, "misImagenes/"); 
   },
   filename: (req, file, cb) => {
     const extension = ruta.extname(file.originalname);
@@ -30,14 +29,14 @@ const almacen = multer.diskStorage({
 
 const subir = multer({ storage: almacen });
 
-// 5. MIDDLEWARES
+// 5. MIDDLEWARES DE EXPRESS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(registroMiddleware); // Muestra el [Historial] en consola
+app.use(registroMiddleware);
 
 // 6. RUTAS
 
-// Ventanilla de Bienvenida
+// Bienvenida
 app.get('/', (_, res) => {
   res.send('API REST Full con Express');
 });
@@ -54,7 +53,7 @@ app.get('/api/aprendices', async (req, res) => {
   }
 });
 
-// POST: CREAR un nuevo aprendiz
+// POST: CREAR un nuevo aprendiz (con archivo e integración de middleware de validación)
 app.post('/api/aprendices', subir.single("imagen"), validarAprendiz, async (req, res) => {
   try {
     const { id, nombre, correo } = req.body;
@@ -63,7 +62,7 @@ app.post('/api/aprendices', subir.single("imagen"), validarAprendiz, async (req,
       id,
       nombre: nombre.trim(),
       correo: correo.trim(),
-      imagen: req.file ? `/mis_imagenes/${req.file.filename}` : "sin imagen"
+      imagen: req.file ? `mis_imagenes/${req.file.filename}` : "sin imagen"
     };
 
     const datos = await sistemaArchivos.readFile(rutaMiArchivo, 'utf-8');
@@ -95,7 +94,13 @@ app.delete('/api/aprendices/:id_aprendices', (req, res) => {
   res.status(200).json({ mensaje: 'Aprendiz eliminado' });
 });
 
+app.get("/api/error", (req, res, next) => {
+  next(new Error("Esto es un error provocado"));
+});
+
+// Middleware de manejo de errores (siempre debe ir al final de todas las rutas)
+app.use(manejadorErroresMiddleware);
 // 7. ARRANQUE DEL SERVIDOR
 app.listen(PUERTO, () => {
-  console.log(`Servidor en funcionamiento en el puerto: ${PUERTO}`);
+ console.log(`Servidor en funcionamiento en: http://localhost:${PUERTO}`);
 });

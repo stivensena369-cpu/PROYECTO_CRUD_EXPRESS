@@ -1,25 +1,30 @@
 // 1. IMPORTACIONES DE MÓDULOS
+
 const express = require('express');
 const sistemaArchivos = require('fs').promises; 
 const ruta = require('path');
 const multer = require("multer");
+const jwt = require("jsonwebtoken"); // Necesario para generar el token en el login
+require('dotenv').config(); // Carga las variables del archivo .env
+const jwtoken = require("jsonwebtoken");  
 
 // Importación de middlewares locales
-const registroMiddleware = require("./middleware/registroMiddleware");
-const { validarAprendiz } = require("./validaciones/validaciones");
-const manejadorErroresMiddleware = require("./middleware/manejadorErroresMiddleware");
+const registroMiddleware = require("./src/middleware/registroMiddleware");
+const { validarAprendiz } = require("./src/validacioncv/validaciones");
+const manejadorErroresMiddleware = require("./src/middleware/manejandoErroresMiddleware");
+const autenticacionMiddleware = require("./src/middleware/autenticacionMiddleware");
 
 // 2. INICIALIZACIÓN
 const app = express();
 
 // 3. CONFIGURACIÓN
-const PUERTO = process.env.PORT || 3000;
+const PUERTO = process.env.MIPUERTO || process.env.PORT || 3000;
 const rutaMiArchivo = ruta.join(__dirname, 'datos.json');
 
 // 4. CONFIGURACIÓN DE MULTER
 const almacen = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "misImagenes/"); 
+    cb(null, "mis_imagenes/"); 
   },
   filename: (req, file, cb) => {
     const extension = ruta.extname(file.originalname);
@@ -98,8 +103,42 @@ app.get("/api/error", (req, res, next) => {
   next(new Error("Esto es un error provocado"));
 });
 
+// Ruta protegida, para acceder con token, permisos de usuario
+app.get("/api/rutaprotegida", autenticacionMiddleware, (req, res) => {
+  res.json({ mensaje: "Ruta Protegida, acceso con token" });
+});
+
+// RUTA DE INICIO DE SESIÓN PARA GENERAR UN TOKEN
+app.post("/api/login", (req, res) => {
+
+  //capturar datos del usuario
+const {usuario, clave} = req.body
+//simular datos de usuario en la BD
+const bdUsuario = {"usuario": "jhonny", "contraseña":"abc123"}
+//validar datos
+if (usuario != bdUsuario.usuario || clave !== bdUsuario.clave){
+
+    return res.status(401).json({ mensaje: "Usuario o contraseña incorrectos" });
+  
+  }
+
+  const token = jwtoken.sign(
+  {"user": req.usuario},
+  process.env.JWT_SECRETO,
+  {expiresIn:"1h"}
+
+  )
+
+   res.json({
+    mensaje: "Login exitoso",
+    token: token
+  });
+});
+
+
 // Middleware de manejo de errores (siempre debe ir al final de todas las rutas)
 app.use(manejadorErroresMiddleware);
+
 // 7. ARRANQUE DEL SERVIDOR
 app.listen(PUERTO, () => {
  console.log(`Servidor en funcionamiento en: http://localhost:${PUERTO}`);
